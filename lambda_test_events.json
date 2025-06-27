@@ -1,0 +1,102 @@
+{
+  "lambdaTestEvents": {
+    "basicNFTQuery": {
+      "httpMethod": "POST",
+      "path": "/nft/query",
+      "queryStringParameters": {
+        "includeMetadata": "true"
+      },
+      "body": "{\"collection\":\"bored-ape-yacht-club\",\"chain\":\"ethereum\"}",
+      "isBase64Encoded": false
+    },
+    "collectionPriceQuery": {
+      "httpMethod": "POST",
+      "path": "/collection/floor",
+      "queryStringParameters": {},
+      "body": "{\"collection\":\"bored-ape-yacht-club\",\"chain\":\"ethereum\"}",
+      "isBase64Encoded": false
+    },
+    "paymentRequest": {
+      "httpMethod": "POST",
+      "path": "/payment/init",
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      },
+      "body": "{\"amount\":\"0.005\",\"currency\":\"ETH\",\"paymentReason\":\"NFT analysis\",\"x402\":{\"payment_type\":\"x402\",\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"redirect_url\":\"https://example.com/success\",\"contract_address\":\"0x123456789abcdef123456789abcdef123456789a\"}}",
+      "isBase64Encoded": false
+    },    "cdpWalletConnect": {
+      "httpMethod": "POST",
+      "path": "/wallet/connect",
+      "body": "{\"session_id\":\"test-session-123\",\"cdp_token\":\"test-cdp-token\",\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"wallet_type\":\"metamask\"}",
+      "isBase64Encoded": false
+    },
+    "coinbaseWalletConnect": {
+      "httpMethod": "POST",
+      "path": "/wallet/connect",
+      "body": "{\"session_id\":\"test-session-456\",\"cdp_token\":\"test-cdp-token\",\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"wallet_type\":\"coinbase\"}",
+      "isBase64Encoded": false
+    },
+    "dynamicPriceQuery": {
+      "httpMethod": "POST",
+      "path": "/pricing/calculate",
+      "body": "{\"resource_type\":\"text_search\",\"quantity\":5}",
+      "isBase64Encoded": false
+    },
+    "nftTransactionQuery": {
+      "httpMethod": "GET",
+      "path": "/transaction/status",
+      "queryStringParameters": {
+        "transaction_id": "0x123abc"
+      },
+      "isBase64Encoded": false
+    },
+    "multiCollectionAnalysis": {
+      "httpMethod": "POST",
+      "path": "/nft/multi-analysis",
+      "body": "{\"collections\":[\"bored-ape-yacht-club\",\"azuki\",\"cryptopunks\"],\"chain\":\"ethereum\",\"analysis_type\":\"market_trends\",\"time_period\":\"30d\"}",
+      "isBase64Encoded": false
+    },
+    "nftSentimentAnalysis": {
+      "httpMethod": "POST",
+      "path": "/nft/sentiment",
+      "body": "{\"collection\":\"bored-ape-yacht-club\",\"time_period\":\"7d\"}",
+      "isBase64Encoded": false
+    },
+    "webSearchQuery": {
+      "httpMethod": "POST",
+      "path": "/search/web",
+      "body": "{\"query\":\"latest trends in NFT market\",\"limit\":5}",
+      "isBase64Encoded": false
+    },
+    "nftRarityCheck": {
+      "httpMethod": "POST",
+      "path": "/nft/rarity",
+      "body": "{\"collection\":\"bored-ape-yacht-club\",\"token_id\":\"1234\"}",
+      "isBase64Encoded": false
+    },    "gasEstimation": {
+      "httpMethod": "GET",
+      "path": "/blockchain/gas",
+      "queryStringParameters": {
+        "network": "ethereum"
+      },
+      "isBase64Encoded": false
+    },    "walletLogin": {
+      "httpMethod": "POST",
+      "path": "/wallet/login",
+      "body": "{\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"action\":\"connect_wallet\",\"wallet_type\":\"metamask\"}",
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      },
+      "isBase64Encoded": false
+    },
+    "coinbaseWalletLogin": {
+      "httpMethod": "POST",
+      "path": "/wallet/login",
+      "body": "{\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"action\":\"connect_wallet\",\"wallet_type\":\"coinbase\"}",
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      },
+      "isBase64Encoded": false
+    }
+  }
+}

@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB Table for AWS Bedrock Agent Session Storage'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
+    Description: Environment name
+
+Resources:
+  # DynamoDB Table for storing Bedrock agent sessions
+  BedrockSessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'NFTBedrockSessions-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: session_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: session_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiration
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # IAM Role policy update to allow Lambda to access the table
+  LambdaBedrockSessionsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy for Bedrock Lambda function to access session storage
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+              - 'dynamodb:PutItem'
+              - 'dynamodb:UpdateItem'
+              - 'dynamodb:DeleteItem'
+              - 'dynamodb:Query'
+              - 'dynamodb:Scan'
+            Resource: !GetAtt BedrockSessionsTable.Arn
+
+Outputs:
+  BedrockSessionsTableName:
+    Description: 'DynamoDB Table for Bedrock agent sessions'
+    Value: !Ref BedrockSessionsTable
+    Export:
+      Name: !Sub '${AWS::StackName}-BedrockSessionsTable'
+
+  BedrockSessionsPolicyArn:
+    Description: 'IAM Policy ARN for Bedrock Sessions Table access'
+    Value: !Ref LambdaBedrockSessionsPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-BedrockSessionsPolicy'

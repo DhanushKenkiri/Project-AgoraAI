@@ -1,0 +1,8 @@
+{
+  "httpMethod": "POST",
+  "path": "/cdp/wallet/connect",
+  "body": "{\"wallet_address\":\"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\",\"signature\":\"0x7b5374657874327369676e3a0a53657373696f6e2072657175657374206174203135363736323434393520666f72204e4654205761697465720a7d746e6678e0e85b19540c6a0f11e05d4add15f162e955d209adddfb6d7afd5646\",\"chain_id\":\"1\",\"wallet_type\":\"metamask\"}",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}

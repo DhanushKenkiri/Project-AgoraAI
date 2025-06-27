@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connect Your Wallet</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #222;
+            text-align: center;
+        }
+        .wallet-options {
+            margin: 25px 0;
+        }
+        .wallet-button {
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .wallet-button:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        }
+        .wallet-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        .wallet-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .form-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 14px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+        }
+        .cancel-link:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #2563eb;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success-message {
+            display: none;
+            background-color: #ecfdf5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Connect Your Wallet</h1>
+        
+        <div class="wallet-options">
+            <button class="wallet-button" id="metamask-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" class="wallet-icon">
+                <span class="wallet-name">MetaMask</span>
+            </button>
+            
+            <button class="wallet-button" id="coinbase-btn">
+                <img src="https://seeklogo.com/images/C/coinbase-coin-logo-C86F46D7B8-seeklogo.com.png" alt="Coinbase" class="wallet-icon">
+                <span class="wallet-name">Coinbase Wallet</span>
+            </button>
+            
+            <button class="wallet-button" id="walletconnect-btn">
+                <img src="https://avatars.githubusercontent.com/u/37784886" alt="WalletConnect" class="wallet-icon">
+                <span class="wallet-name">WalletConnect</span>
+            </button>
+        </div>
+        
+        <div id="manual-form" class="form-section">
+            <form id="wallet-form" action="/ui/wallet/connect" method="post">
+                <input type="hidden" id="wallet-type" name="wallet_type" value="metamask">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                <input type="hidden" name="redirect_url" value="{{ redirect_url or '' }}">
+                
+                <div class="form-group">
+                    <label for="wallet-address">Your Wallet Address</label>
+                    <input type="text" id="wallet-address" name="wallet_address" placeholder="0x..." required>
+                </div>
+                
+                <button type="submit" id="connect-button">Connect Wallet</button>
+            </form>
+        </div>
+        
+        <a href="{{ cancel_url or '#' }}" class="cancel-link" id="cancel-link">Cancel</a>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Connecting wallet...</p>
+        </div>
+
+        <div id="success-message" class="success-message">
+            Wallet connected successfully!
+        </div>
+    </div>
+    
+    <script>
+        let selectedWalletType = 'metamask';
+        const formSection = document.getElementById('manual-form');
+        const walletTypeInput = document.getElementById('wallet-type');
+        
+        // Wallet button event listeners
+        document.getElementById('metamask-btn').addEventListener('click', function() {
+            connectWallet('metamask');
+        });
+        
+        document.getElementById('coinbase-btn').addEventListener('click', function() {
+            connectWallet('coinbase');
+        });
+        
+        document.getElementById('walletconnect-btn').addEventListener('click', function() {
+            connectWallet('walletconnect');
+        });
+        
+        function connectWallet(walletType) {
+            selectedWalletType = walletType;
+            walletTypeInput.value = walletType;
+            
+            // Show the form
+            formSection.style.display = 'block';
+            
+            // Try to connect to wallet if it's MetaMask
+            if (walletType === 'metamask' && typeof window.ethereum !== 'undefined') {
+                ethereum.request({ method: 'eth_requestAccounts' })
+                    .then(accounts => {
+                        document.getElementById('wallet-address').value = accounts[0];
+                        
+                        // Auto-submit the form
+                        document.getElementById('wallet-form').submit();
+                    })
+                    .catch(error => {
+                        console.error('Error connecting wallet:', error);
+                        alert('Error connecting wallet. Please enter your address manually.');
+                    });
+            }
+            // Basic Coinbase Wallet connectivity (would use their SDK in production)
+            else if (walletType === 'coinbase' && typeof window.coinbaseWalletExtension !== 'undefined') {
+                // Similar to MetaMask but using Coinbase's API
+                alert('Please enter your Coinbase wallet address manually');
+            }
+            else {
+                // For other wallets or if browser extensions not available
+                alert('Please enter your wallet address manually');
+            }
+        }
+        
+        // Handle form submission
+        document.getElementById('wallet-form').addEventListener('submit', function(e) {
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('connect-button').disabled = true;
+        });
+        
+        // Handle cancel
+        const cancelLink = document.getElementById('cancel-link');
+        cancelLink.addEventListener('click', function(e) {
+            if (!cancelLink.getAttribute('href') || cancelLink.getAttribute('href') === '#') {
+                e.preventDefault();
+                window.close();
+            }
+        });
+
+        // Check if this is a popup and handle messaging to parent
+        function sendMessageToParent(message) {
+            if (window.opener && window.opener.postMessage) {
+                window.opener.postMessage(message, '*');
+            }
+            else if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, '*');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Payment System</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+            --info-color: #3498db;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.success-button {
+            background-color: var(--secondary-color);
+        }
+
+        button.success-button:hover {
+            background-color: #27ae60;
+        }
+
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .notification {
+            padding: 15px 25px;
+            margin-bottom: 15px;
+            border-radius: var(--border-radius);
+            color: white;
+            box-shadow: var(--box-shadow);
+            animation: slide-in 0.5s ease-out forwards;
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.info {
+            background-color: var(--info-color);
+        }
+
+        .fade-out {
+            animation: fade-out 0.5s ease-in forwards;
+        }
+
+        .collection-image {
+            max-width: 200px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+        }
+
+        .collection-stats {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+        }
+
+        .premium-content {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        #dashboard-section, #premium-analysis {
+            display: none;
+        }
+
+        @keyframes slide-in {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-out {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+    
+    <header>
+        <div class="container">
+            <h1>NFT Payment System</h1>
+            <p>Powered by X402 Protocol and CDP Wallet</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Login Section -->
+        <section id="login-section" class="card">
+            <h2>Login</h2>
+            <div>
+                <input type="email" id="email-input" placeholder="Email" />
+                <input type="password" id="password-input" placeholder="Password" />
+                <button id="login-button">Login</button>
+            </div>
+        </section>
+        
+        <!-- Wallet Connection Section -->
+        <section id="wallet-section" class="card">
+            <h2>Wallet Connection</h2>
+            <p id="wallet-status">Not connected</p>
+            <button id="connect-wallet-button">Connect CDP Wallet</button>
+        </section>
+        
+        <!-- Dashboard Section -->
+        <section id="dashboard-section">
+            <!-- NFT Search -->
+            <div class="card">
+                <h2>Search NFT Collections</h2>
+                <div>
+                    <input type="text" id="collection-input" placeholder="Collection name (e.g., bored-ape-yacht-club)" />
+                    <input type="text" id="contract-input" placeholder="Contract address (required)" />
+                    <select id="chain-input">
+                        <option value="ethereum">Ethereum</option>
+                        <option value="base">Base</option>
+                        <option value="base-sepolia">Base Sepolia</option>
+                        <option value="ethereum-sepolia">Ethereum Sepolia</option>
+                    </select>
+                    <button id="nft-search-button">Search</button>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="nft-results" class="card">
+                <!-- Search results will be displayed here -->
+            </div>
+            
+            <!-- Premium Analysis Section -->
+            <div id="premium-analysis" class="card">
+                <!-- Premium analysis content will be displayed here after payment -->
+            </div>
+        </section>
+    </div>
+    
+    <!-- Load JavaScript -->
+    <script src="cdp_wallet_connector.js"></script>
+    <script src="frontend_integration.js"></script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDP Wallet & X402 Payment Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        h1 {
+            text-align: center;
+        }
+        .section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        button.connected {
+            background-color: #27ae60;
+        }
+        button.disconnected {
+            background-color: #e74c3c;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+        }
+        .status.error {
+            border-left-color: #e74c3c;
+            background-color: #fdedec;
+        }
+        .status.success {
+            border-left-color: #27ae60;
+            background-color: #eafaf1;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        input[type="text"] {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-right: 10px;
+            width: 300px;
+        }
+        .flex {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .divider {
+            border-top: 1px dashed #ddd;
+            margin: 20px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CDP Wallet & X402 Payment Integration Demo</h1>
+        
+        <div class="section">
+            <h2>CDP Wallet Connection</h2>
+            <div>
+                <button id="connect-wallet" onclick="connectWallet()">Connect CDP Wallet</button>
+                <button id="disconnect-wallet" onclick="disconnectWallet()" disabled>Disconnect Wallet</button>
+                <button id="check-status" onclick="checkWalletStatus()">Check Status</button>
+            </div>
+            <div class="status" id="wallet-status">Wallet not connected</div>
+            <div class="divider"></div>
+            <div>
+                <h3>Sign Message</h3>
+                <div class="flex">
+                    <input type="text" id="message-to-sign" placeholder="Enter message to sign" value="CDP Wallet Test Message">
+                    <button id="sign-message" onclick="signMessage()" disabled>Sign Message</button>
+                </div>
+                <div class="status" id="sign-status">No signature yet</div>
+                <pre id="signature-result" class="hidden"></pre>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>X402 Payment Flow</h2>
+            <div>
+                <div class="flex">
+                    <input type="text" id="resource-id" placeholder="Resource ID" value="premium-content-123">
+                    <button id="get-payment-requirements" onclick="getPaymentRequirements()" disabled>Get Payment Requirements</button>
+                </div>
+                <div class="status" id="payment-requirements-status">No payment requirements requested</div>
+                <pre id="payment-requirements-result" class="hidden"></pre>
+            </div>
+            <div class="divider"></div>
+            <div>
+                <button id="process-payment" onclick="processPayment()" disabled>Process Payment</button>
+                <div class="status" id="payment-status">No payment processed</div>
+                <pre id="payment-result" class="hidden"></pre>
+            </div>
+            <div class="divider"></div>
+            <div>
+                <button id="access-resource" onclick="accessProtectedResource()" disabled>Access Protected Resource</button>
+                <div class="status" id="resource-status">No resource accessed</div>
+                <pre id="resource-result" class="hidden"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_ENDPOINT = 'https://your-api-endpoint';  // Replace with your actual API Gateway endpoint
+        let sessionId = localStorage.getItem('cdp_session_id');
+        let walletAddress = null;
+        let paymentRequirements = null;
+        let resourceId = null;
+        
+        // Generate a session ID if we don't have one
+        if (!sessionId) {
+            sessionId = generateUUID();
+            localStorage.setItem('cdp_session_id', sessionId);
+        }
+        
+        // Generate a UUID for session ID
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0,
+                    v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        // Initialize
+        async function initialize() {
+            // Check wallet status on page load
+            await checkWalletStatus();
+        }
+        
+        // Connect wallet
+        async function connectWallet() {
+            updateStatus('wallet-status', 'Connecting wallet...', 'info');
+            
+            try {
+                // For demo, we'll use a mock wallet address
+                const mockWalletAddress = '0x' + '1234567890abcdef'.repeat(2);
+                const mockSignature = '0x' + 'abcdef1234567890'.repeat(4) + '1b';
+                
+                const response = await fetch(`${API_ENDPOINT}/cdp/wallet/connect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify({
+                        wallet_address: mockWalletAddress,
+                        wallet_type: 'metamask',
+                        signature: mockSignature,
+                        message: 'Connect my wallet'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    walletAddress = result.wallet_address;
+                    updateStatus('wallet-status', `Wallet connected: ${walletAddress}`, 'success');
+                    document.getElementById('connect-wallet').disabled = true;
+                    document.getElementById('disconnect-wallet').disabled = false;
+                    document.getElementById('sign-message').disabled = false;
+                    document.getElementById('get-payment-requirements').disabled = false;
+                } else {
+                    updateStatus('wallet-status', `Failed to connect wallet: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                updateStatus('wallet-status', `Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Check wallet status
+        async function checkWalletStatus() {
+            try {
+                const response = await fetch(`${API_ENDPOINT}/cdp/wallet/status?session_id=${sessionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.connected) {
+                    walletAddress = result.wallet_address;
+                    updateStatus('wallet-status', `Wallet connected: ${walletAddress}`, 'success');
+                    document.getElementById('connect-wallet').disabled = true;
+                    document.getElementById('disconnect-wallet').disabled = false;
+                    document.getElementById('sign-message').disabled = false;
+                    document.getElementById('get-payment-requirements').disabled = false;
+                } else {
+                    updateStatus('wallet-status', 'No wallet connected', 'info');
+                    document.getElementById('connect-wallet').disabled = false;
+                    document.getElementById('disconnect-wallet').disabled = true;
+                    document.getElementById('sign-message').disabled = true;
+                    document.getElementById('get-payment-requirements').disabled = true;
+                }
+            } catch (error) {
+                updateStatus('wallet-status', `Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Disconnect wallet
+        async function disconnectWallet() {
+            updateStatus('wallet-status', 'Disconnecting wallet...', 'info');
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/cdp/wallet/disconnect`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    walletAddress = null;
+                    updateStatus('wallet-status', 'Wallet disconnected', 'info');
+                    document.getElementById('connect-wallet').disabled = false;
+                    document.getElementById('disconnect-wallet').disabled = true;
+                    document.getElementById('sign-message').disabled = true;
+                    document.getElementById('get-payment-requirements').disabled = true;
+                    document.getElementById('process-payment').disabled = true;
+                    document.getElementById('access-resource').disabled = true;
+                } else {
+                    updateStatus('wallet-status', `Failed to disconnect wallet: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                updateStatus('wallet-status', `Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Sign message
+        async function signMessage() {
+            const message = document.getElementById('message-to-sign').value;
+            if (!message) {
+                updateStatus('sign-status', 'Please enter a message to sign', 'error');
+                return;
+            }
+            
+            updateStatus('sign-status', 'Signing message...', 'info');
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/cdp/wallet/sign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('sign-status', 'Message signed successfully', 'success');
+                    document.getElementById('signature-result').textContent = JSON.stringify(result, null, 2);
+                    document.getElementById('signature-result').classList.remove('hidden');
+                } else {
+                    updateStatus('sign-status', `Failed to sign message: ${result.error}`, 'error');
+                    document.getElementById('signature-result').classList.add('hidden');
+                }
+            } catch (error) {
+                updateStatus('sign-status', `Error: ${error.message}`, 'error');
+                document.getElementById('signature-result').classList.add('hidden');
+            }
+        }
+        
+        // Get payment requirements
+        async function getPaymentRequirements() {
+            resourceId = document.getElementById('resource-id').value;
+            if (!resourceId) {
+                updateStatus('payment-requirements-status', 'Please enter a resource ID', 'error');
+                return;
+            }
+            
+            updateStatus('payment-requirements-status', 'Getting payment requirements...', 'info');
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/x402/payment/requirements?resource=${resourceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    paymentRequirements = result;
+                    updateStatus('payment-requirements-status', 'Payment requirements received', 'success');
+                    document.getElementById('payment-requirements-result').textContent = JSON.stringify(result, null, 2);
+                    document.getElementById('payment-requirements-result').classList.remove('hidden');
+                    document.getElementById('process-payment').disabled = false;
+                } else {
+                    updateStatus('payment-requirements-status', `Failed to get requirements: ${result.error}`, 'error');
+                    document.getElementById('payment-requirements-result').classList.add('hidden');
+                }
+            } catch (error) {
+                updateStatus('payment-requirements-status', `Error: ${error.message}`, 'error');
+                document.getElementById('payment-requirements-result').classList.add('hidden');
+            }
+        }
+        
+        // Process payment
+        async function processPayment() {
+            if (!resourceId || !paymentRequirements) {
+                updateStatus('payment-status', 'Please get payment requirements first', 'error');
+                return;
+            }
+            
+            updateStatus('payment-status', 'Processing payment...', 'info');
+            
+            try {
+                // Create a mock payment payload
+                // Note: In a real implementation, you would use the X402 client to create a proper payment header
+                const mockPayload = {
+                    resource: resourceId,
+                    header: 'mockPaymentHeaderBase64',
+                    signature: '0x' + 'abcdef1234567890'.repeat(4) + '1b',
+                    network: paymentRequirements.network || 'base-sepolia',
+                    amount: paymentRequirements.maxAmountRequired || '0.001',
+                    asset: paymentRequirements.asset || 'ETH'
+                };
+                
+                const response = await fetch(`${API_ENDPOINT}/x402/payment/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    },
+                    body: JSON.stringify(mockPayload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('payment-status', 'Payment processed successfully', 'success');
+                    document.getElementById('payment-result').textContent = JSON.stringify(result, null, 2);
+                    document.getElementById('payment-result').classList.remove('hidden');
+                    document.getElementById('access-resource').disabled = false;
+                } else {
+                    updateStatus('payment-status', `Payment failed: ${result.error}`, 'error');
+                    document.getElementById('payment-result').classList.add('hidden');
+                }
+            } catch (error) {
+                updateStatus('payment-status', `Error: ${error.message}`, 'error');
+                document.getElementById('payment-result').classList.add('hidden');
+            }
+        }
+        
+        // Access protected resource
+        async function accessProtectedResource() {
+            if (!resourceId) {
+                updateStatus('resource-status', 'Please specify a resource ID', 'error');
+                return;
+            }
+            
+            updateStatus('resource-status', 'Accessing protected resource...', 'info');
+            
+            try {
+                const response = await fetch(`${API_ENDPOINT}/x402/protected-resource/${resourceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-session-id': sessionId
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('resource-status', 'Protected resource accessed successfully', 'success');
+                    document.getElementById('resource-result').textContent = JSON.stringify(result, null, 2);
+                    document.getElementById('resource-result').classList.remove('hidden');
+                } else {
+                    updateStatus('resource-status', `Failed to access resource: ${result.error}`, 'error');
+                    document.getElementById('resource-result').classList.add('hidden');
+                }
+            } catch (error) {
+                updateStatus('resource-status', `Error: ${error.message}`, 'error');
+                document.getElementById('resource-result').classList.add('hidden');
+            }
+        }
+        
+        // Update status div
+        function updateStatus(elementId, message, type) {
+            const statusDiv = document.getElementById(elementId);
+            statusDiv.textContent = message;
+            statusDiv.className = 'status';
+            if (type) {
+                statusDiv.classList.add(type);
+            }
+        }
+        
+        // Initialize on page load
+        window.onload = initialize;
+    </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+{
+  "testEvents": {
+    "basicNFTQuery": {
+      "httpMethod": "POST",
+      "path": "/nft/query",
+      "body": {
+        "collection": "bored-ape-yacht-club",
+        "chain": "ethereum"
+      },
+      "queryStringParameters": {
+        "includeMetadata": "true"
+      }
+    },
+    "collectionPriceQuery": {
+      "httpMethod": "POST",
+      "path": "/collection/floor",
+      "body": {
+        "collection": "bored-ape-yacht-club",
+        "chain": "ethereum"
+      }
+    },    "paymentRequest": {
+      "httpMethod": "POST",
+      "path": "/payment/init",
+      "body": {
+        "amount": "0.005",
+        "currency": "ETH",
+        "paymentReason": "NFT analysis",
+        "x402": {
+          "payment_type": "x402",
+          "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+          "redirect_url": "https://example.com/success",
+          "contract_address": "0x123abc"
+        }
+      },
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      }
+    },    "cdpWalletConnect": {
+      "httpMethod": "POST",
+      "path": "/wallet/connect",
+      "body": {
+        "session_id": "test-session-123",
+        "cdp_token": "test-cdp-token",
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "wallet_type": "metamask"
+      }
+    },
+    "coinbaseWalletConnect": {
+      "httpMethod": "POST",
+      "path": "/wallet/connect",
+      "body": {
+        "session_id": "test-session-456",
+        "cdp_token": "test-cdp-token",
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 
+        "wallet_type": "coinbase"
+      }
+    },
+    "dynamicPriceQuery": {
+      "httpMethod": "POST",
+      "path": "/pricing/calculate",
+      "body": {
+        "resource_type": "text_search",
+        "quantity": 5
+      }
+    },
+    "nftTransactionQuery": {
+      "httpMethod": "GET",
+      "path": "/transaction/status",
+      "queryStringParameters": {
+        "transaction_id": "0x123abc"
+      }
+    },
+    "multiCollectionAnalysis": {
+      "httpMethod": "POST",
+      "path": "/nft/multi-analysis",
+      "body": {
+        "collections": ["bored-ape-yacht-club", "azuki", "cryptopunks"],
+        "chain": "ethereum",
+        "analysis_type": "market_trends",
+        "time_period": "30d"
+      }
+    },
+    "nftSentimentAnalysis": {
+      "httpMethod": "POST",
+      "path": "/nft/sentiment",
+      "body": {
+        "collection": "bored-ape-yacht-club",
+        "time_period": "7d"
+      }
+    },
+    "webSearchQuery": {
+      "httpMethod": "POST",
+      "path": "/search/web",
+      "body": {
+        "query": "latest trends in NFT market",
+        "limit": 5
+      }
+    },
+    "nftRarityCheck": {
+      "httpMethod": "POST",
+      "path": "/nft/rarity",
+      "body": {
+        "collection": "bored-ape-yacht-club",
+        "token_id": "1234"
+      }
+    },    "gasEstimation": {
+      "httpMethod": "GET",
+      "path": "/blockchain/gas",
+      "queryStringParameters": {
+        "network": "ethereum"
+      }
+    },    "walletLogin": {
+      "httpMethod": "POST",
+      "path": "/wallet/login",
+      "body": {
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "action": "connect_wallet",
+        "wallet_type": "metamask"
+      },
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      }
+    },
+    "coinbaseWalletLogin": {
+      "httpMethod": "POST",
+      "path": "/wallet/login",
+      "body": {
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+        "action": "connect_wallet",
+        "wallet_type": "coinbase" 
+      },
+      "headers": {
+        "Authorization": "Bearer test_user_token"
+      }
+    },
+    "demoWalletLogin": {
+      "httpMethod": "POST",
+      "path": "/wallet/login",
+      "body": {
+        "wallet_address": "0x5e7eE927ce269023794b231465Ed53D66cbD564b",
+        "action": "connect_wallet",
+        "wallet_type": "metamask"
+      }
+    },
+    "getWalletNFTs": {
+      "httpMethod": "GET",
+      "path": "/wallet/nfts",
+      "queryStringParameters": {
+        "wallet_address": "0x5e7eE927ce269023794b231465Ed53D66cbD564b"
+      }
+    },
+    "walletDetails": {
+      "httpMethod": "GET",
+      "path": "/wallet/details",
+      "queryStringParameters": {
+        "wallet_address": "0x5e7eE927ce269023794b231465Ed53D66cbD564b"
+      }
+    }
+  },
+  "simulatedResponses": {
+    "reservoir": {
+      "collection": {
+        "id": "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
+        "name": "Bored Ape Yacht Club",
+        "slug": "bored-ape-yacht-club",
+        "image": "https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?w=500&auto=format",
+        "floorAsk": {
+          "price": {
+            "amount": {
+              "native": 23.95,
+              "usd": 58157.38,
+              "decimal": 23.95
+            },
+            "currency": {
+              "contract": "0x0000000000000000000000000000000000000000",
+              "name": "ETH",
+              "symbol": "ETH",
+              "decimals": 18
+            }
+          }
+        },
+        "tokenCount": "10000"
+      }
+    }
+  },
+  "lambdaContext": {
+    "functionName": "nft-payment-lambda",
+    "functionVersion": "$LATEST",
+    "invokedFunctionArn": "arn:aws:lambda:us-east-1:123456789012:function:nft-payment-lambda",
+    "awsRequestId": "test-request-123"
+  },  "mockEnvironment": {
+    "ENVIRONMENT": "test",
+    "RESERVOIR_API_KEY": "test_key",
+    "OPENSEA_API_KEY": "test_key",
+    "NFTGO_API_KEY": "test_key",
+    "MORALIS_API_KEY": "test_key",
+    "ALCHEMY_API_KEY": "test_key",
+    "PERPLEXITY_API_KEY": "test_key",
+    "ETHERSCAN_API_KEY": "test_key",
+    "MAX_PAYMENT_AMOUNT": "10.0",
+    "MIN_PAYMENT_AMOUNT": "0.001",
+    "DEFAULT_CURRENCY": "ETH",
+    "SUPPORTED_CURRENCIES": "ETH,USDC,USDT,DAI",
+    "NETWORK": "base-sepolia",
+    "TOKEN_CONTRACT_ADDRESS": "0x123456789abcdef123456789abcdef123456789a",
+    "RPC_URL": "https://sepolia.base.org",
+    "CDP_WALLET_APP_ID": "test_app_id",
+    "TRANSACTION_TABLE_NAME": "NFTPaymentTransactions-test",
+    "WALLET_SESSIONS_TABLE": "NFTWalletSessions-test",
+    "RESOURCE_PRICES": "{\"text_search\": 0.001, \"image_search\": 0.002, \"premium_content\": 0.005}"
+  },  "agentFunctions": {
+    "wallet_login": {
+      "description": "Connect a user's wallet and create a session",
+      "parameters": {
+        "wallet_address": {
+          "type": "string",
+          "description": "The user's wallet address (required)"
+        },
+        "wallet_type": {
+          "type": "string",
+          "description": "The type of wallet (metamask or coinbase)",
+          "optional": true
+        }
+      },
+      "returns": {
+        "success": "Boolean indicating whether the login was successful",
+        "session_token": "Token for the wallet session",
+        "expiration": "Timestamp when the session expires"
+      },
+      "example": "wallet_login('0x742d35Cc6634C0532925a3b844Bc454e4438f44e', 'metamask')"
+    },
+    "get_wallet_info": {
+      "description": "Get information about a connected wallet",
+      "parameters": {
+        "wallet_address": {
+          "type": "string",
+          "description": "The wallet address to get information for"
+        }
+      },
+      "returns": {
+        "success": "Boolean indicating whether the request was successful",
+        "wallet": "Object containing wallet details"
+      },
+      "example": "get_wallet_info('0x742d35Cc6634C0532925a3b844Bc454e4438f44e')"
+    },
+    "get_wallet_nfts": {
+      "description": "Get NFTs owned by a wallet",
+      "parameters": {
+        "wallet_address": {
+          "type": "string", 
+          "description": "The wallet address to check for NFTs"
+        }
+      },
+      "returns": {
+        "success": "Boolean indicating whether the request was successful",
+        "nfts": "Array of NFTs owned by the wallet"
+      },
+      "example": "get_wallet_nfts('0x5e7eE927ce269023794b231465Ed53D66cbD564b')"
+    }
+  },
+  "bedrockAgentEvents": {
+    "walletLoginRequest": {
+      "messageVersion": "1.0",
+      "requestBody": {
+        "actionGroup": "NFTPaymentActions",
+        "apiPath": "/wallet_login",
+        "parameters": [
+          {
+            "name": "wallet_address",
+            "value": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          },
+          {
+            "name": "wallet_type",
+            "value": "metamask"
+          }
+        ]
+      }
+    },
+    "getNFTsRequest": {
+      "messageVersion": "1.0",
+      "requestBody": {
+        "actionGroup": "NFTPaymentActions",
+        "apiPath": "/get_wallet_nfts",
+        "parameters": [
+          {
+            "name": "wallet_address",
+            "value": "0x5e7eE927ce269023794b231465Ed53D66cbD564b"
+          }
+        ]
+      }
+    },
+    "paymentRequest": {
+      "messageVersion": "1.0",
+      "requestBody": {
+        "actionGroup": "NFTPaymentActions",
+        "apiPath": "/process_payment",
+        "parameters": [
+          {
+            "name": "amount",
+            "value": "0.005"
+          },
+          {
+            "name": "currency",
+            "value": "ETH"
+          },
+          {
+            "name": "payment_reason",
+            "value": "NFT analysis"
+          },
+          {
+            "name": "wallet_address",
+            "value": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          }
+        ]
+      }
+    },
+    "paymentUIRequest": {
+      "messageVersion": "1.0",
+      "requestBody": {
+        "actionGroup": "NFTPaymentActions",
+        "apiPath": "/ui_payment_popup",
+        "parameters": [
+          {
+            "name": "amount",
+            "value": "0.005"
+          },
+          {
+            "name": "currency",
+            "value": "ETH"
+          },
+          {
+            "name": "payment_reason",
+            "value": "NFT analysis"
+          }
+        ]
+      }
+    }
+  }
+}

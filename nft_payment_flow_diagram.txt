@@ -1,0 +1,69 @@
+```
+                           NFT Payment Flow with CDP Wallet and X402 Gateway
+                           ===============================================
+
+┌───────────────┐   1. User queries about NFT    ┌───────────────────────────┐    
+│               │   transaction or payment       │                           │
+│    User       ├───────────────────────────────►│    Amazon Bedrock         │
+│               │                                │    Agent (NFT Agent)      │
+└───────┬───────┘                                └───────────────┬───────────┘
+        │                                                        │
+        │                                                        │
+        │                                                        │
+        │                                                        ▼
+        │                                                ┌───────────────────┐
+        │                                                │                   │
+        │                                                │ Main Lambda       │
+        │                                                │ (NFT data)        │
+        │                                                │                   │
+        │                                                └────────┬──────────┘
+        │                                                         │
+        │                                                         │ 2. Detect payment intent
+        │                                                         │
+        │                                                         ▼
+        │                                                ┌────────────────────┐
+        │                                                │                    │
+        │                                                │ Payment            │
+        │                                                │ Collaboration      │
+        │                                                │ Agent              │
+        │                                                │                    │
+        │                                                └────────┬───────────┘
+        │                                                         │
+        │                                                         │ 3. Request wallet connection
+        │                                                         │
+        │                      4. Prompt to connect wallet        │
+        │◄────────────────────────────────────────────────────────┘
+        │
+        │ 5. User connects CDP wallet
+        │
+        ▼
+┌───────────────┐                                ┌────────────────────────┐
+│               │                                │                        │
+│  CDP Wallet   │                                │ Payment Lambda         │
+│  Interface    │◄──────────────────────────────►│ Handler                │
+│               │  6. Wallet authentication      │                        │
+└───────┬───────┘     & session creation         └────────────┬───────────┘
+        │                                                     │
+        │                                                     │
+        │ 7. Initiate payment                                 │
+        │                                                     │
+        ▼                                                     ▼
+┌───────────────┐                                ┌────────────────────────┐
+│               │                                │                        │
+│  X402 Payment │◄──────────────────────────────►│  Payment               │
+│  Gateway      │  8. Payment processing         │  Transaction           │
+│               │     & confirmation             │  Records (DynamoDB)    │
+└───────────────┘                                │                        │
+                                                 └────────────────────────┘
+
+Security Features:
+-----------------
+1. KMS encryption for sensitive payment data
+2. HMAC signatures for payment verification 
+3. Nonce-based replay protection
+4. Session tokens with expiration
+5. Transaction hashing and verification
+6. Complete audit trail in DynamoDB
+7. CloudWatch alarms for suspicious activities
+8. Rate limiting to prevent attacks
+```

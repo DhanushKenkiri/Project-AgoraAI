@@ -1,0 +1,21 @@
+{
+    "ENVIRONMENT": "prod",
+    "RESERVOIR_API_KEY": "your_reservoir_api_key",
+    "OPENSEA_API_KEY": "your_opensea_api_key",
+    "NFTGO_API_KEY": "your_nftgo_api_key",
+    "MORALIS_API_KEY": "your_moralis_api_key",
+    "ALCHEMY_API_KEY": "your_alchemy_api_key",
+    "PERPLEXITY_API_KEY": "your_perplexity_api_key",
+    "ETHERSCAN_API_KEY": "your_etherscan_api_key",
+    "MAX_PAYMENT_AMOUNT": "10.0",
+    "MIN_PAYMENT_AMOUNT": "0.001",
+    "DEFAULT_CURRENCY": "ETH",
+    "SUPPORTED_CURRENCIES": "ETH,USDC,USDT,DAI",
+    "NETWORK": "base-sepolia",
+    "TOKEN_CONTRACT_ADDRESS": "0x123...",
+    "RPC_URL": "https://sepolia.base.org",
+    "CDP_WALLET_APP_ID": "your_cdp_wallet_app_id",
+    "TRANSACTION_TABLE_NAME": "NFTPaymentTransactions-prod",
+    "WALLET_SESSIONS_TABLE": "NFTWalletSessions-prod",
+    "RESOURCE_PRICES": "{\"text_search\": 0.001, \"image_search\": 0.002, \"premium_content\": 0.005}"
+}

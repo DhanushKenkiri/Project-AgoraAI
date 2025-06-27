@@ -1,0 +1,14 @@
+{
+  "path": "/wallet/login",
+  "httpMethod": "POST",
+  "body": "{\"wallet_address\": \"0x742d35Cc6634C0532925a3b844Bc454e4438f44e\", \"wallet_type\": \"metamask\"}",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-API-Key": "test-api-key"
+  },
+  "requestContext": {
+    "identity": {
+      "sourceIp": "127.0.0.1"
+    }
+  }
+}

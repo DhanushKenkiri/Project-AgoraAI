@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NFT Payment</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #222;
+            text-align: center;
+        }
+        .payment-details {
+            margin-bottom: 25px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .payment-label {
+            color: #666;
+        }
+        .payment-value {
+            font-weight: bold;
+            color: #333;
+        }
+        .divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 15px 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 14px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+        }
+        .cancel-link:hover {
+            text-decoration: underline;
+        }
+        .wallet-info {
+            margin-top: 20px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #2563eb;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success-message {
+            display: none;
+            background-color: #ecfdf5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Complete Your Payment</h1>
+        
+        <div class="payment-details">
+            <div class="payment-row">
+                <div class="payment-label">Amount:</div>
+                <div class="payment-value">{{ amount }} {{ currency }}</div>
+            </div>
+            <div class="payment-row">
+                <div class="payment-label">Purpose:</div>
+                <div class="payment-value">{{ payment_reason }}</div>
+            </div>
+        </div>
+        
+        <form id="payment-form" action="/ui/payment/process" method="post">
+            <input type="hidden" name="amount" value="{{ amount }}">
+            <input type="hidden" name="currency" value="{{ currency }}">
+            <input type="hidden" name="payment_reason" value="{{ payment_reason }}">
+            <input type="hidden" name="redirect_url" value="{{ redirect_url or '' }}">
+            
+            <div class="form-group">
+                <label for="wallet-address">Your Wallet Address</label>
+                <input type="text" id="wallet-address" name="wallet_address" placeholder="0x..." required>
+            </div>
+            
+            <div class="form-group">
+                <label for="wallet-type">Wallet Type</label>
+                <select id="wallet-type" name="wallet_type">
+                    <option value="metamask">MetaMask</option>
+                    <option value="coinbase">Coinbase Wallet</option>
+                    <option value="walletconnect">WalletConnect</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="pay-button">Complete Payment</button>
+        </form>
+        
+        <a href="{{ cancel_url or '#' }}" class="cancel-link" id="cancel-link">Cancel Payment</a>
+        
+        <div class="wallet-info">
+            <button type="button" id="connect-wallet-btn" style="background-color: #4c1d95;">Connect Wallet</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing payment...</p>
+        </div>
+
+        <div id="success-message" class="success-message">
+            Payment completed successfully!
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('connect-wallet-btn').addEventListener('click', function() {
+            // In a real implementation, this would connect to MetaMask or other wallets
+            if (typeof window.ethereum !== 'undefined') {
+                ethereum.request({ method: 'eth_requestAccounts' })
+                    .then(accounts => {
+                        document.getElementById('wallet-address').value = accounts[0];
+                        alert('Wallet connected: ' + accounts[0]);
+                    })
+                    .catch(error => {
+                        console.error('Error connecting wallet:', error);
+                        alert('Error connecting wallet');
+                    });
+            } else {
+                alert('MetaMask is not installed. Please install MetaMask or enter your wallet address manually.');
+            }
+        });
+        
+        // Handle form submission
+        document.getElementById('payment-form').addEventListener('submit', function(e) {
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('pay-button').disabled = true;
+        });
+        
+        // Handle cancel
+        const cancelLink = document.getElementById('cancel-link');
+        cancelLink.addEventListener('click', function(e) {
+            if (!cancelLink.getAttribute('href') || cancelLink.getAttribute('href') === '#') {
+                e.preventDefault();
+                window.close();
+            }
+        });
+
+        // Check if this is a popup and handle messaging to parent
+        function sendMessageToParent(message) {
+            if (window.opener && window.opener.postMessage) {
+                window.opener.postMessage(message, '*');
+            }
+            else if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, '*');
+            }
+        }
+    </script>
+</body>
+</html>

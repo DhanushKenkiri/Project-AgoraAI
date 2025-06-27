@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/x402/payment/requirements",
+  "queryStringParameters": {
+    "item_id": "nft_analysis_premium",
+    "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "x-session-id": "cdp_sess_a1b2c3d4e5f6"
+  }
+}

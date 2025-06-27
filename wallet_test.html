@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        input {
+            padding: 10px;
+            width: 400px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        #result {
+            background-color: #e9f7ef;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wallet Connection Test</h1>
+    
+    <div class="container">
+        <h2>Connect with MetaMask</h2>
+        <p>Click the button below to connect your MetaMask wallet:</p>
+        <button id="metamaskButton">Connect MetaMask</button>
+        <div id="metamaskStatus"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Connect with Manual Address</h2>
+        <p>Enter your wallet address to connect:</p>
+        <input type="text" id="walletAddress" placeholder="Enter your wallet address (0x...)">
+        <select id="walletType">
+            <option value="metamask">MetaMask</option>
+            <option value="coinbase">Coinbase</option>
+        </select>
+        <button id="manualConnectButton">Connect Wallet</button>
+    </div>
+    
+    <div class="container">
+        <h2>Result</h2>
+        <div id="result">No connection attempt yet</div>
+    </div>
+    
+    <script>
+        // API endpoint
+        const apiEndpoint = 'https://your-api-gateway-url/wallet/connect';
+        // For local testing, use: http://localhost:9000/wallet/connect
+        
+        document.getElementById('metamaskButton').addEventListener('click', async () => {
+            try {
+                const statusElement = document.getElementById('metamaskStatus');
+                const resultElement = document.getElementById('result');
+                
+                // Check if MetaMask is installed
+                if (!window.ethereum) {
+                    statusElement.innerHTML = '<span class="error">MetaMask is not installed. Please install MetaMask browser extension.</span>';
+                    return;
+                }
+                
+                statusElement.innerHTML = 'Connecting to MetaMask...';
+                
+                // Request accounts
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+                
+                if (!walletAddress) {
+                    statusElement.innerHTML = '<span class="error">Failed to get wallet address</span>';
+                    return;
+                }
+                
+                statusElement.innerHTML = `<span class="success">Connected to MetaMask: ${walletAddress}</span>`;
+                
+                // Now connect to the backend
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: walletAddress,
+                        wallet_type: 'metamask'
+                    })
+                });
+                
+                const data = await response.json();
+                resultElement.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success) {
+                    statusElement.innerHTML += '<br><span class="success">Backend connection successful!</span>';
+                } else {
+                    statusElement.innerHTML += '<br><span class="error">Backend connection failed</span>';
+                }
+            } catch (error) {
+                document.getElementById('metamaskStatus').innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                console.error(error);
+            }
+        });
+        
+        document.getElementById('manualConnectButton').addEventListener('click', async () => {
+            try {
+                const walletAddress = document.getElementById('walletAddress').value.trim();
+                const walletType = document.getElementById('walletType').value;
+                const resultElement = document.getElementById('result');
+                
+                if (!walletAddress || !walletAddress.startsWith('0x')) {
+                    resultElement.innerHTML = '<span class="error">Please enter a valid wallet address starting with 0x</span>';
+                    return;
+                }
+                
+                resultElement.textContent = 'Connecting...';
+                
+                // Connect to the backend
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        wallet_address: walletAddress,
+                        wallet_type: walletType
+                    })
+                });
+                
+                const data = await response.json();
+                resultElement.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

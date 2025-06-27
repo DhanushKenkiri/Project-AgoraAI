@@ -1,0 +1,18 @@
+{
+  "sessionId": "12345-demo-session-id",
+  "body": {
+    "message": "Show me my NFT collection",
+    "sessionId": "12345-demo-session-id"
+  },
+  "requestBody": {
+    "actionGroup": "NFTPaymentActions",
+    "apiPath": "/wallet/nfts",
+    "httpMethod": "GET",
+    "parameters": [
+      {
+        "name": "session_id",
+        "value": "12345-demo-session-id"
+      }
+    ]
+  }
+}
