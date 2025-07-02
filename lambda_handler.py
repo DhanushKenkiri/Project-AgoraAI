@@ -1,5 +1,3 @@
-# (This is the fully rewritten lambda_handler.py file)
-
 import json
 import os
 import logging
@@ -8,13 +6,10 @@ import time
 import boto3
 import uuid
 import base64
-import sys
 
-# Configure logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Import API integrations
 from apis.moralis_api import fetch_moralis_data
 from apis.alchemy_api import fetch_alchemy_data
 from apis.nftscan_api import fetch_nftscan_data
@@ -28,25 +23,19 @@ from utils.recommendations import generate_recommendations
 from utils.sentiment import fetch_social_sentiment
 from config import load_api_keys
 
-# Import our enhanced modules with safe error handling
 try:
-    # Enhanced wallet login handler with session management
     from enhanced_wallet_login import handle_wallet_connection, check_wallet_status, disconnect_wallet
-    # Image processing modules
     from image_processor import process_image_upload, get_image_by_id
     from nft_image_processor import get_nft_images, get_wallet_nft_images
-    # Bedrock integration
-    from bedrock_integration import bedrock_agent_handler    # CDP wallet and X402 payment integration
+    from bedrock_integration import bedrock_agent_handler
     from cdp_wallet_x402_integration import handle_combined_wallet_payment_request
 except ImportError as e:
-    logger.warning(f"Failed to import enhanced modules: {str(e)}")
+    logger.warning(f"Enhanced modules unavailable: {str(e)}")
 
-# Import wallet login handlers with fallbacks
 try:
     from wallet_login import wallet_login, get_wallet_info
     from nft_wallet import handle_wallet_login, get_wallet_details, get_wallet_nfts, check_transaction_status
 except ImportError:
-    # Fallback if wallet_login.py doesn't exist or has errors
     logger.warning("Using fallback wallet integration")
     from x402_payment_handler import handle_wallet_connection
     wallet_login = lambda wallet_address: handle_wallet_connection({'wallet_address': wallet_address})
@@ -56,7 +45,6 @@ except ImportError:
     get_wallet_nfts = lambda wallet_address: {'success': True, 'nfts': []}
     check_transaction_status = lambda tx_id: {'success': True, 'status': 'pending'}
 
-# Define CORS headers for responses
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type,Authorization,x-session-id',
@@ -64,18 +52,10 @@ CORS_HEADERS = {
 }
 
 def fetch_data_from_apis(token_address, token_id):
-    """
-    Fetch NFT data from multiple APIs concurrently with fallbacks
-    """
     start_time = time.time()
-    
-    # Load API keys from environment or configuration
     api_keys = load_api_keys()
-    
-    # Available APIs to try
     available_apis = check_api_availability(api_keys)
     
-    # Prepare results dictionary
     results = {
         'token_address': token_address,
         'token_id': token_id,
@@ -87,11 +67,9 @@ def fetch_data_from_apis(token_address, token_id):
     }
     
     try:
-        # Use ThreadPoolExecutor for concurrent API calls
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = {}
             
-            # Submit API tasks based on availability
             if available_apis.get('moralis'):
                 futures['moralis'] = executor.submit(fetch_moralis_data, token_address, token_id, api_keys.get('MORALIS_API_KEY', ''))
             
@@ -107,21 +85,17 @@ def fetch_data_from_apis(token_address, token_id):
             if available_apis.get('nftgo'):
                 futures['nftgo'] = executor.submit(fetch_nftgo_data, token_address, token_id, api_keys.get('NFTGO_API_KEY', ''))
             
-            # Process results as they complete
             for api_name, future in futures.items():
                 try:
                     api_start = time.time()
-                    api_result = future.result(timeout=10)  # 10 second timeout
+                    api_result = future.result(timeout=10)
                     api_time = time.time() - api_start
                     
-                    # Record API response time
                     results['api_response_times'][api_name] = api_time
                     
-                    # Add API data to results if successful
                     if api_result and api_result.get('success'):
                         results['data_sources'].append(api_name)
                         
-                        # Merge API data into results
                         for key, value in api_result.items():
                             if key != 'success':
                                 results[key] = value
@@ -129,57 +103,43 @@ def fetch_data_from_apis(token_address, token_id):
                 except Exception as e:
                     logger.error(f"Error from {api_name} API: {str(e)}")
             
-            # If no API data available, try web search as fallback
             if not results['data_sources'] and available_apis.get('perplexity'):
                 try:
                     web_search_query = generate_search_query(token_address, token_id)
-                    web_result = search_web_with_perplexity(web_search_query, api_keys.get('PERPLEXITY_API_KEY', ''))
-                    
+                    web_result = search_web_with_perplexity(web_search_query, api_keys.get('PERPLEXITY_API_KEY', ''))                    
                     if web_result and web_result.get('success'):
                         results['data_sources'].append('web_search')
                         results['web_search_data'] = web_result.get('data')
                 except Exception as e:
                     logger.error(f"Web search fallback failed: {str(e)}")
         
-        # Mark as successful if we have any data sources
         results['success'] = len(results['data_sources']) > 0
     
     except Exception as e:
         logger.error(f"General data fetching error: {str(e)}")
         results['error'] = str(e)
     
-    # Calculate total processing time
     results['processing_time'] = time.time() - start_time
-    
     return results
 
-def trim_response_if_needed(response_data, max_size=6291556):  # Lambda limit is 6MB
-    """
-    Trim response data to fit within Lambda limits
-    """
+def trim_response_if_needed(response_data, max_size=5000000):
     try:
-        # Convert to JSON to check size
         response_json = json.dumps(response_data)
         current_size = len(response_json.encode('utf-8'))
         
         if current_size <= max_size:
             return response_data, False
         
-        # Need to trim the response
         trimmed_data = response_data.copy()
-        
-        # Start by removing fields that might have large content
         large_fields = ['metadata_raw', 'description', 'attributes', 'web_search_data']
+        
         for field in large_fields:
             if field in trimmed_data:
                 del trimmed_data[field]
-                
-                # Check if we're under the limit now
                 trimmed_json = json.dumps(trimmed_data)
                 if len(trimmed_json.encode('utf-8')) <= max_size:
                     return trimmed_data, True
         
-        # If still too large, trim other fields
         if 'transaction_history' in trimmed_data:
             trimmed_data['transaction_history'] = trimmed_data['transaction_history'][:5]
         
@@ -193,17 +153,10 @@ def trim_response_if_needed(response_data, max_size=6291556):  # Lambda limit is
         return response_data, False
 
 def lambda_handler(event, context):
-    """
-    AWS Lambda handler to fetch comprehensive NFT data with smart fallbacks and web search.
-    Uses multiple NFT APIs with graceful degradation to Perplexity web search if APIs fail.
-    Also handles wallet login and payment requests.
-    Integrates with Bedrock Agent for AI capabilities.
-    """
-    # Parse API path if present
     path = event.get('path', '')
     http_method = event.get('httpMethod', 'GET')
     
-    # Handle different API endpoints
+    # Route to appropriate handler based on path
     if path == '/wallet/login' or path == '/wallet/connect':
         return handle_wallet_request(event)
     elif path == '/wallet/status':
@@ -246,7 +199,6 @@ def lambda_handler(event, context):
         return handle_ui_request(event)
     elif path.startswith('/cdp/wallet/') or path.startswith('/x402/'):
         try:
-            # Route to combined CDP wallet and X402 payment handler
             return handle_combined_wallet_payment_request(event)
         except Exception as e:
             logger.error(f"Error handling CDP wallet or X402 payment request: {str(e)}")
@@ -259,9 +211,8 @@ def lambda_handler(event, context):
                 })
             }
     
-    # Check if this is a Bedrock agent request
+    # Handle Bedrock agent requests
     if ('action' in event and 'parameters' in event) or ('requestBody' in event and 'messageVersion' in event):
-        # This appears to be a Bedrock agent request, we need to handle it properly
         try:
             return handle_bedrock_agent_request(event, context)
         except Exception as e:
@@ -275,13 +226,10 @@ def lambda_handler(event, context):
     
     # Default NFT data query handling
     try:
-        # Extract token address and ID from query parameters
         params = event.get('queryStringParameters', {}) or {}
-        
         token_address = params.get('address') or params.get('contract') or params.get('token_address')
         token_id = params.get('id') or params.get('token_id')
         
-        # Validate input
         if not token_address or not token_id:
             return {
                 'statusCode': 400,
@@ -292,16 +240,12 @@ def lambda_handler(event, context):
                 })
             }
         
-        # Fetch data from APIs
         result = fetch_data_from_apis(token_address, token_id)
         
-        # Generate value-added insights if data is available
         if result['success']:
             try:
-                # Enhance with recommendations
                 result['recommendations'] = generate_recommendations(result)
                 
-                # Enhance with sentiment analysis if available
                 try:
                     sentiment_data = fetch_social_sentiment(token_address)
                     if sentiment_data and sentiment_data.get('success'):
@@ -312,12 +256,10 @@ def lambda_handler(event, context):
             except Exception as e:
                 logger.warning(f"Error generating insights: {str(e)}")
         
-        # Trim response if needed
         trimmed_result, was_trimmed = trim_response_if_needed(result)
         if was_trimmed:
             trimmed_result['note'] = 'Response was trimmed due to size limits'
         
-        # Return the API response
         return {
             'statusCode': 200 if result['success'] else 404,
             'headers': CORS_HEADERS,
@@ -336,13 +278,10 @@ def lambda_handler(event, context):
         }
 
 def handle_bedrock_agent_request(event, context):
-    """Handle Bedrock agent requests"""
     try:
-        # If bedrock_agent_handler is available, use it
         if 'bedrock_agent_handler' in globals():
             return bedrock_agent_handler(event, context)
         
-        # Fallback response if handler not available
         return {
             'messageVersion': '1.0',
             'response': {
@@ -359,9 +298,7 @@ def handle_bedrock_agent_request(event, context):
         }
 
 def handle_wallet_request(event):
-    """Handle wallet login/connect requests"""
     try:
-        # Parse request body
         body = json.loads(event.get('body', '{}'))
         wallet_address = body.get('wallet_address')
         wallet_type = body.get('wallet_type', 'metamask')
@@ -377,7 +314,6 @@ def handle_wallet_request(event):
                 })
             }
         
-        # Try enhanced wallet connection if available
         try:
             if 'handle_wallet_connection' in globals():
                 result = handle_wallet_connection(event)
@@ -389,7 +325,6 @@ def handle_wallet_request(event):
         except Exception as e:
             logger.warning(f"Enhanced wallet connection failed, using fallback: {str(e)}")
         
-        # Fallback to basic wallet login
         result = wallet_login(wallet_address)
         
         return {
@@ -410,15 +345,12 @@ def handle_wallet_request(event):
         }
 
 def handle_wallet_status(event):
-    """Handle wallet status check"""
     try:
-        # Get session ID from headers or query parameters
         headers = event.get('headers', {}) or {}
         params = event.get('queryStringParameters', {}) or {}
         
         session_id = headers.get('x-session-id') or params.get('session_id')
         
-        # Try enhanced wallet status check if available
         try:
             if 'check_wallet_status' in globals():
                 result = check_wallet_status(session_id)
@@ -430,7 +362,6 @@ def handle_wallet_status(event):
         except Exception as e:
             logger.warning(f"Enhanced wallet status check failed, using fallback: {str(e)}")
         
-        # Fallback response
         return {
             'statusCode': 200,
             'headers': CORS_HEADERS,
@@ -453,9 +384,7 @@ def handle_wallet_status(event):
         }
 
 def handle_wallet_disconnect(event):
-    """Handle wallet disconnect requests"""
     try:
-        # Get session ID from headers or body
         headers = event.get('headers', {}) or {}
         body = json.loads(event.get('body', '{}'))
         
@@ -471,7 +400,6 @@ def handle_wallet_disconnect(event):
                 })
             }
         
-        # Try enhanced wallet disconnect if available
         try:
             if 'disconnect_wallet' in globals():
                 result = disconnect_wallet(session_id)
@@ -483,7 +411,6 @@ def handle_wallet_disconnect(event):
         except Exception as e:
             logger.warning(f"Enhanced wallet disconnect failed, using fallback: {str(e)}")
         
-        # Fallback response
         return {
             'statusCode': 200,
             'headers': CORS_HEADERS,
@@ -505,9 +432,7 @@ def handle_wallet_disconnect(event):
         }
 
 def handle_wallet_nfts_request(event):
-    """Handle requests for NFTs owned by a wallet"""
     try:
-        # Get wallet address from query parameters
         params = event.get('queryStringParameters', {}) or {}
         wallet_address = params.get('wallet_address') or params.get('address')
         
@@ -521,10 +446,8 @@ def handle_wallet_nfts_request(event):
                 })
             }
         
-        # Get NFTs from wallet
         result = get_wallet_nfts(wallet_address)
         
-        # Trim response if needed
         trimmed_result, was_trimmed = trim_response_if_needed(result)
         if was_trimmed:
             trimmed_result['note'] = 'Response was trimmed due to size limits'
@@ -547,9 +470,7 @@ def handle_wallet_nfts_request(event):
         }
 
 def handle_wallet_details_request(event):
-    """Handle wallet details request"""
     try:
-        # Get wallet address from query parameters
         params = event.get('queryStringParameters', {}) or {}
         wallet_address = params.get('wallet_address') or params.get('address')
         
@@ -563,7 +484,6 @@ def handle_wallet_details_request(event):
                 })
             }
         
-        # Get wallet details
         result = get_wallet_details(wallet_address)
         
         return {
@@ -584,7 +504,6 @@ def handle_wallet_details_request(event):
         }
 
 def handle_image_upload(event):
-    """Handle image upload requests"""
     try:
         if not 'process_image_upload' in globals():
             return {
@@ -596,7 +515,6 @@ def handle_image_upload(event):
                 })
             }
         
-        # Get image data from request body
         body = json.loads(event.get('body', '{}'))
         image_data = body.get('image_data')
         image_name = body.get('image_name', 'uploaded_image')
@@ -611,7 +529,6 @@ def handle_image_upload(event):
                 })
             }
         
-        # Process image upload
         result = process_image_upload(image_data, image_name)
         
         return {
@@ -632,7 +549,6 @@ def handle_image_upload(event):
         }
 
 def handle_image_request(event):
-    """Handle image retrieval requests"""
     try:
         if not 'get_image_by_id' in globals():
             return {
@@ -644,7 +560,6 @@ def handle_image_request(event):
                 })
             }
         
-        # Get image ID from query parameters
         params = event.get('queryStringParameters', {}) or {}
         image_id = params.get('id')
         
@@ -658,7 +573,6 @@ def handle_image_request(event):
                 })
             }
         
-        # Get image by ID
         result = get_image_by_id(image_id)
         
         return {
@@ -679,9 +593,7 @@ def handle_image_request(event):
         }
 
 def handle_payment_request(event):
-    """Handle payment initialization requests"""
     try:
-        # Parse request body
         body = json.loads(event.get('body', '{}'))
         wallet_address = body.get('wallet_address')
         amount = body.get('amount')
@@ -697,10 +609,8 @@ def handle_payment_request(event):
                 })
             }
         
-        # Generate payment ID
         payment_id = f"pay_{uuid.uuid4().hex[:8]}"
         
-        # Return payment initiation response
         return {
             'statusCode': 200,
             'headers': CORS_HEADERS,
@@ -727,9 +637,7 @@ def handle_payment_request(event):
         }
 
 def handle_transaction_status(event):
-    """Handle transaction status check requests"""
     try:
-        # Get transaction ID from query parameters
         params = event.get('queryStringParameters', {}) or {}
         tx_id = params.get('tx_id') or params.get('id')
         
@@ -743,7 +651,6 @@ def handle_transaction_status(event):
                 })
             }
         
-        # Check transaction status
         result = check_transaction_status(tx_id)
         
         return {
@@ -764,15 +671,12 @@ def handle_transaction_status(event):
         }
 
 def handle_pricing_request(event):
-    """Handle pricing calculation requests"""
     try:
-        # Parse request body
         body = json.loads(event.get('body', '{}'))
         nft_count = body.get('nft_count', 1)
         tier = body.get('tier', 'standard')
         
-        # Calculate price based on NFT count and tier
-        base_price = 0.01  # Base price in ETH
+        base_price = 0.01
         
         if tier == 'premium':
             base_price = 0.03
@@ -781,9 +685,8 @@ def handle_pricing_request(event):
         
         total_price = base_price * max(1, nft_count)
         
-        # Apply volume discount
         if nft_count > 10:
-            discount = 0.15  # 15% discount for more than 10 NFTs
+            discount = 0.15
             total_price = total_price * (1 - discount)
         
         return {
@@ -811,12 +714,8 @@ def handle_pricing_request(event):
         }
 
 def handle_gas_request(event):
-    """Handle gas price retrieval requests"""
     try:
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Fetch gas prices
         gas_prices = fetch_gas_prices(api_keys.get('ETHERSCAN_API_KEY', ''))
         
         if not gas_prices.get('success'):
@@ -847,9 +746,7 @@ def handle_gas_request(event):
         }
 
 def handle_web_search_request(event):
-    """Handle web search requests"""
     try:
-        # Get query from query parameters
         params = event.get('queryStringParameters', {}) or {}
         query = params.get('query')
         
@@ -863,10 +760,7 @@ def handle_web_search_request(event):
                 })
             }
         
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Search web with Perplexity
         result = search_web_with_perplexity(query, api_keys.get('PERPLEXITY_API_KEY', ''))
         
         return {
@@ -887,9 +781,7 @@ def handle_web_search_request(event):
         }
 
 def handle_sentiment_request(event):
-    """Handle NFT sentiment analysis requests"""
     try:
-        # Get contract address from query parameters
         params = event.get('queryStringParameters', {}) or {}
         contract_address = params.get('address') or params.get('contract')
         
@@ -903,7 +795,6 @@ def handle_sentiment_request(event):
                 })
             }
         
-        # Fetch sentiment data
         sentiment_data = fetch_social_sentiment(contract_address)
         
         return {
@@ -924,9 +815,7 @@ def handle_sentiment_request(event):
         }
 
 def handle_multi_collection_request(event):
-    """Handle multi-collection analysis requests"""
     try:
-        # Parse request body
         body = json.loads(event.get('body', '{}'))
         collections = body.get('collections', [])
         
@@ -940,10 +829,7 @@ def handle_multi_collection_request(event):
                 })
             }
         
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Analyze multiple collections
         results = {}
         
         for collection in collections:
@@ -977,9 +863,7 @@ def handle_multi_collection_request(event):
         }
 
 def handle_rarity_request(event):
-    """Handle NFT rarity analysis requests"""
     try:
-        # Get parameters from query parameters
         params = event.get('queryStringParameters', {}) or {}
         contract_address = params.get('address') or params.get('contract')
         token_id = params.get('id') or params.get('token_id')
@@ -994,10 +878,7 @@ def handle_rarity_request(event):
                 })
             }
         
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Fetch rarity data
         rarity_data = fetch_rarity_data(contract_address, token_id, api_keys.get('RESERVOIR_API_KEY', ''))
         
         return {
@@ -1018,9 +899,7 @@ def handle_rarity_request(event):
         }
 
 def handle_collection_price_request(event):
-    """Handle collection floor price requests"""
     try:
-        # Get collection address from query parameters
         params = event.get('queryStringParameters', {}) or {}
         collection_address = params.get('address') or params.get('collection')
         
@@ -1034,10 +913,7 @@ def handle_collection_price_request(event):
                 })
             }
         
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Fetch market data
         market_data = fetch_market_data(collection_address, api_keys.get('RESERVOIR_API_KEY', ''))
         
         return {
@@ -1058,9 +934,7 @@ def handle_collection_price_request(event):
         }
 
 def handle_nft_query_request(event):
-    """Handle natural language NFT queries"""
     try:
-        # Get query from query parameters
         params = event.get('queryStringParameters', {}) or {}
         query = params.get('query')
         
@@ -1074,10 +948,7 @@ def handle_nft_query_request(event):
                 })
             }
         
-        # Load API keys
         api_keys = load_api_keys()
-        
-        # Use Perplexity to search for NFT info
         search_result = search_web_with_perplexity(f"NFT {query}", api_keys.get('PERPLEXITY_API_KEY', ''))
         
         if not search_result.get('success'):
@@ -1112,9 +983,7 @@ def handle_nft_query_request(event):
         }
 
 def handle_ai_chat_request(event):
-    """Handle AI chat requests"""
     try:
-        # Parse request body
         body = json.loads(event.get('body', '{}'))
         message = body.get('message')
         
@@ -1128,9 +997,7 @@ def handle_ai_chat_request(event):
                 })
             }
         
-        # Process AI chat request
         try:
-            # Try using the bedrock agent handler if available
             response = handle_bedrock_agent_request({
                 'action': {
                     'name': 'userMessage',
@@ -1140,14 +1007,12 @@ def handle_ai_chat_request(event):
                 }
             }, None)
             
-            # Extract message from Bedrock response
             if 'response' in response and 'message' in response['response']:
                 ai_response = response['response']['message']
             else:
                 ai_response = "I'm sorry, I couldn't process your request."
             
         except Exception:
-            # Fallback to simple response
             ai_response = f"I received your message: '{message}'. How can I help with NFTs today?"
         
         return {
@@ -1172,11 +1037,9 @@ def handle_ai_chat_request(event):
         }
 
 def handle_ui_request(event):
-    """Handle UI resource requests"""
     try:
         path = event.get('path', '')
         
-        # Simple UI resources handler
         if path.endswith('.html'):
             return {
                 'statusCode': 200,
@@ -1226,9 +1089,6 @@ def handle_ui_request(event):
         }
 
 def handle_wallet_nft_images(event):
-    """
-    Handle requests for NFT images from a wallet
-    """
     try:
         if 'get_wallet_nft_images' not in globals():
             return {
@@ -1240,7 +1100,6 @@ def handle_wallet_nft_images(event):
                 })
             }
         
-        # Get wallet address from query parameters
         params = event.get('queryStringParameters', {}) or {}
         wallet_address = params.get('wallet_address') or params.get('address')
         limit = params.get('limit')
@@ -1260,10 +1119,8 @@ def handle_wallet_nft_images(event):
                 })
             }
         
-        # Get NFT images from the wallet
         result = get_wallet_nft_images(wallet_address, limit)
         
-        # Trim response if needed
         trimmed_result, was_trimmed = trim_response_if_needed(result)
         if was_trimmed:
             trimmed_result['note'] = 'Response was trimmed due to size limits'
@@ -1285,15 +1142,10 @@ def handle_wallet_nft_images(event):
         }
 
 def handle_combined_wallet_payment_request(event):
-    """
-    Route CDP wallet and X402 payment requests to the appropriate handler
-    """
     try:
-        # Import the handler module if not already imported
         if 'handle_combined_wallet_payment_request' not in globals():
             from cdp_wallet_x402_integration import handle_combined_wallet_payment_request
         
-        # Forward the request to the CDP wallet and X402 payment handler
         return handle_combined_wallet_payment_request(event)
     except Exception as e:
         logger.error(f"Error handling CDP wallet or X402 payment request: {str(e)}")
