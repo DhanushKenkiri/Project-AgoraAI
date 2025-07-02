@@ -29,6 +29,7 @@ try:
     from nft_image_processor import get_nft_images, get_wallet_nft_images
     from bedrock_integration import bedrock_agent_handler
     from cdp_wallet_x402_integration import handle_combined_wallet_payment_request
+    from chainlink_integration import get_chainlink_price, request_vrf_randomness, fulfill_randomness_callback, get_supported_price_feeds, create_price_automation, setup_dynamic_nft_pricing, enable_cross_chain_sync
 except ImportError as e:
     logger.warning(f"Enhanced modules unavailable: {str(e)}")
 
@@ -192,9 +193,21 @@ def lambda_handler(event, context):
     elif path == '/collection/floor':
         return handle_collection_price_request(event)
     elif path == '/nft/query':
-        return handle_nft_query_request(event)
-    elif path == '/ai/chat' or path == '/agent/chat':
+        return handle_nft_query_request(event)    elif path == '/ai/chat' or path == '/agent/chat':
         return handle_ai_chat_request(event)
+    elif path == '/chainlink/price':
+        return handle_chainlink_price_request(event)
+    elif path == '/chainlink/vrf/request':
+        return handle_chainlink_vrf_request(event)    elif path == '/chainlink/vrf/fulfill':
+        return handle_chainlink_vrf_fulfill(event)
+    elif path == '/chainlink/feeds':
+        return handle_chainlink_feeds_request(event)
+    elif path == '/chainlink/automation/create':
+        return handle_chainlink_automation_request(event)
+    elif path == '/chainlink/pricing/dynamic':
+        return handle_dynamic_pricing_request(event)
+    elif path == '/chainlink/crosschain/sync':
+        return handle_crosschain_sync_request(event)
     elif '/ui/' in path:
         return handle_ui_request(event)
     elif path.startswith('/cdp/wallet/') or path.startswith('/x402/'):
@@ -1155,5 +1168,253 @@ def handle_combined_wallet_payment_request(event):
             'body': json.dumps({
                 'success': False,
                 'error': f'CDP wallet or X402 payment processing failed: {str(e)}'
+            })
+        }
+
+def handle_chainlink_price_request(event):
+    try:
+        params = event.get('queryStringParameters', {}) or {}
+        body = event.get('body')
+        if body:
+            try:
+                body_params = json.loads(body)
+                params.update(body_params)
+            except:
+                pass
+        
+        asset_pair = params.get('pair') or params.get('asset')
+        network = params.get('network', 'ethereum')
+        
+        if not asset_pair:
+            return {
+                'statusCode': 400,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Asset pair is required (e.g., ETH/USD, BTC/USD)'
+                })
+            }
+        
+        result = get_chainlink_price(asset_pair, network)
+        
+        return {
+            'statusCode': 200 if result.get('success') else 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps(result)
+        }
+    except Exception as e:
+        logger.error(f"Chainlink price request error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Chainlink price request failed: {str(e)}'
+            })
+        }
+
+def handle_chainlink_vrf_request(event):
+    try:
+        params = event.get('queryStringParameters', {}) or {}
+        body = event.get('body')
+        if body:
+            try:
+                body_params = json.loads(body)
+                params.update(body_params)
+            except:
+                pass
+        
+        consumer_address = params.get('consumer_address')
+        key_hash = params.get('key_hash')
+        fee = params.get('fee')
+        seed = params.get('seed')
+        
+        result = request_vrf_randomness(consumer_address, key_hash, fee, seed)
+        
+        return {
+            'statusCode': 200 if result.get('success') else 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps(result)
+        }
+    except Exception as e:
+        logger.error(f"Chainlink VRF request error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Chainlink VRF request failed: {str(e)}'
+            })
+        }
+
+def handle_chainlink_vrf_fulfill(event):
+    try:
+        body = event.get('body')
+        if not body:
+            return {
+                'statusCode': 400,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Request body is required'
+                })
+            }
+        
+        try:
+            params = json.loads(body)
+        except:
+            return {
+                'statusCode': 400,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Invalid JSON in request body'
+                })
+            }
+        
+        request_id = params.get('request_id')
+        randomness = params.get('randomness')
+        
+        result = fulfill_randomness_callback(request_id, randomness)
+        
+        return {
+            'statusCode': 200 if result.get('success') else 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps(result)
+        }
+    except Exception as e:
+        logger.error(f"Chainlink VRF fulfill error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Chainlink VRF fulfill failed: {str(e)}'
+            })
+        }
+
+def handle_chainlink_feeds_request(event):
+    try:
+        result = get_supported_price_feeds()
+        
+        return {
+            'statusCode': 200,
+            'headers': CORS_HEADERS,
+            'body': json.dumps(result)
+        }
+    except Exception as e:
+        logger.error(f"Chainlink feeds request error: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Chainlink feeds request failed: {str(e)}'
+            })
+        }
+
+def handle_chainlink_automation_request(event):
+    try:
+        body = event.get('body')
+        if body:
+            params = json.loads(body)
+            price_threshold = params.get('price_threshold')
+            asset_pair = params.get('asset_pair', 'ETH/USD')
+            callback_address = params.get('callback_address')
+            
+            if price_threshold and callback_address:
+                result = create_price_automation(price_threshold, asset_pair, callback_address)
+                return {
+                    'statusCode': 200 if result.get('success') else 500,
+                    'headers': CORS_HEADERS,
+                    'body': json.dumps(result)
+                }
+        
+        return {
+            'statusCode': 400,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': 'price_threshold and callback_address are required'
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Automation request failed: {str(e)}'
+            })
+        }
+
+def handle_dynamic_pricing_request(event):
+    try:
+        params = event.get('queryStringParameters', {}) or {}
+        body = event.get('body')
+        if body:
+            body_params = json.loads(body)
+            params.update(body_params)
+        
+        nft_contract = params.get('nft_contract')
+        collection_id = params.get('collection_id')
+        
+        if nft_contract and collection_id:
+            result = setup_dynamic_nft_pricing(nft_contract, collection_id)
+            return {
+                'statusCode': 200 if result.get('success') else 500,
+                'headers': CORS_HEADERS,
+                'body': json.dumps(result)
+            }
+        
+        return {
+            'statusCode': 400,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': 'nft_contract and collection_id are required'
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Dynamic pricing failed: {str(e)}'
+            })
+        }
+
+def handle_crosschain_sync_request(event):
+    try:
+        body = event.get('body')
+        if body:
+            params = json.loads(body)
+            source_chain = params.get('source_chain', 'ethereum')
+            target_chains = params.get('target_chains', [])
+            
+            if target_chains:
+                result = enable_cross_chain_sync(source_chain, target_chains)
+                return {
+                    'statusCode': 200 if result.get('success') else 500,
+                    'headers': CORS_HEADERS,
+                    'body': json.dumps(result)
+                }
+        
+        return {
+            'statusCode': 400,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': 'target_chains array is required'
+            })
+        }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({
+                'success': False,
+                'error': f'Cross-chain sync failed: {str(e)}'
             })
         }
