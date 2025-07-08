@@ -1,0 +1,58 @@
+{
+  "name": "chainlink-defi-tokenization-hackathon",
+  "version": "1.0.0",
+  "description": "DeFi and Tokenization platform with comprehensive Chainlink integration for hackathon submission",
+  "main": "lambda_handler.py",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:ethereum": "hardhat run scripts/deploy.js --network ethereum",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "deploy:avalanche": "hardhat run scripts/deploy.js --network avalanche",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "deploy:mumbai": "hardhat run scripts/deploy.js --network mumbai",
+    "deploy:fuji": "hardhat run scripts/deploy.js --network fuji",
+    "interact:ethereum": "hardhat run scripts/interact.js --network ethereum",
+    "interact:polygon": "hardhat run scripts/interact.js --network polygon",
+    "interact:avalanche": "hardhat run scripts/interact.js --network avalanche",
+    "test": "hardhat test",
+    "verify:ethereum": "hardhat verify --network ethereum",
+    "verify:polygon": "hardhat verify --network polygon",
+    "verify:avalanche": "hardhat verify --network avalanche",
+    "node": "hardhat node",
+    "clean": "hardhat clean"
+  },
+  "keywords": [
+    "chainlink",
+    "defi",
+    "tokenization",
+    "nft",
+    "cross-chain",
+    "hackathon",
+    "web3",
+    "blockchain",
+    "automation",
+    "vrf",
+    "ccip",
+    "price-feeds"
+  ],
+  "author": "Chainlink Hackathon Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "@chainlink/contracts": "^0.8.0",
+    "hardhat": "^2.17.0",
+    "dotenv": "^16.3.1"
+  },
+  "dependencies": {
+    "ethers": "^5.7.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/chainlink-defi-tokenization-hackathon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/chainlink-defi-tokenization-hackathon/issues"
+  },
+  "homepage": "https://github.com/your-username/chainlink-defi-tokenization-hackathon#readme"
+}
